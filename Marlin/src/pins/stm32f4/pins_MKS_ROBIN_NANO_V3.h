@@ -31,6 +31,10 @@
 
 #define BOARD_INFO_NAME "MKS Robin Nano V3"
 
+// Use soft PWM for fans - PWM is not working properly when paired with STM32 Arduino Core v1.7.0
+// This can be removed when Core version is updated and PWM behaviour is fixed.
+#define FAN_SOFT_PWM
+
 // USB Flash Drive support
 #define HAS_OTG_USB_HOST_SUPPORT
 
@@ -166,8 +170,8 @@
 #define HEATER_1_PIN                        PB0   // HEATER2
 #define HEATER_BED_PIN                      PA0   // HOT BED
 
-#define FAN_PIN                             PB1   // FAN
-#define FAN1_PIN                            PC14  // FAN1
+#define FAN_PIN                             PC14  // FAN0
+#define FAN1_PIN                            PB1   // FAN1
 
 //
 // Thermocouples
@@ -204,6 +208,7 @@
 #if ENABLED(MKS_TEST)
   #define MKS_TEST_POWER_LOSS_PIN         PW_DET   // PW_DET
   #define MKS_TEST_PS_ON_PIN              PW_OFF   // PW_OFF
+  #define MKS_TEST_Z_MAX_PIN              PC4      // Z_MAX_PIN
 #endif
 
 //#define POWER_LOSS_PIN                    PW_DET
@@ -222,7 +227,7 @@
 #define WIFI_RESET_PIN                    PE9   // MKS ESP WIFI RESET PIN
 
 #ifndef SDCARD_CONNECTION
-  #define SDCARD_CONNECTION              ONBOARD
+  #define SDCARD_CONNECTION               ONBOARD
 #endif
 
 //
@@ -260,10 +265,10 @@
 //
 // LCD / Controller
 #define SPI_FLASH
-#define HAS_SPI_FLASH                          1
-#define SPI_DEVICE                             2
-#define SPI_FLASH_SIZE                 0x1000000
 #if ENABLED(SPI_FLASH)
+  #define HAS_SPI_FLASH                     1
+  #define SPI_DEVICE                        2
+  #define SPI_FLASH_SIZE                    0x1000000
   #define W25QXX_CS_PIN                     PB12
   #define W25QXX_MOSI_PIN                   PC3
   #define W25QXX_MISO_PIN                   PC2
@@ -335,7 +340,9 @@
 
   #define TFT_BUFFER_SIZE                  14400
 
-#elif HAS_SPI_LCD
+  #define TFT_DRIVER                       ST7796
+
+#else
   #define BEEPER_PIN                        PC5
   #define BTN_ENC                           PE13
   #define LCD_PINS_ENABLE                   PD13
@@ -366,8 +373,8 @@
       #define LCD_PINS_D7                   PD10
     #endif
 
-    #define BOARD_ST7920_DELAY_1    DELAY_NS(96)
-    #define BOARD_ST7920_DELAY_2    DELAY_NS(48)
+    #define BOARD_ST7920_DELAY_1    DELAY_NS(200)
+    #define BOARD_ST7920_DELAY_2    DELAY_NS(400)
     #define BOARD_ST7920_DELAY_3    DELAY_NS(600)
 
   #endif // !MKS_MINI_12864
