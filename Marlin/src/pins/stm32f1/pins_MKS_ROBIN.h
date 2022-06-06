@@ -187,6 +187,8 @@
   #define TFT_BUFFER_SIZE                  14400
 #endif
 
+// #define USE_DMA_FSMC_TC_INT
+
 #if NEED_TOUCH_PINS
   #define TOUCH_CS_PIN                      PB1   // SPI2_NSS
   #define TOUCH_SCK_PIN                     PB13  // SPI2_SCK
@@ -200,7 +202,7 @@
 #define SPI_DEVICE                             2
 
 #define SDIO_SUPPORT
-#define SDIO_CLOCK                       4500000
+#define SDIO_CLOCK                          4500000 // 4500000    // 4.5MHz
 #define SDIO_READ_RETRIES                     16
 #if ENABLED(SDIO_SUPPORT)
   #define SD_SCK_PIN                        PB13  // SPI2

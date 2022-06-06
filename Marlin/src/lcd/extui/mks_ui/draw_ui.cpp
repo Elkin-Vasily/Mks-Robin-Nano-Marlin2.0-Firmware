@@ -237,7 +237,7 @@ void ui_cfg_init() {
 void update_spi_flash() {
   uint8_t command_buf[512];
 
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   // read back the gcode command before erase spi flash
   W25QXX.SPI_FLASH_BufferRead((uint8_t *)&command_buf, GCODE_COMMAND_ADDR, sizeof(command_buf));
   W25QXX.SPI_FLASH_SectorErase(VAR_INF_ADDR);
@@ -248,7 +248,7 @@ void update_spi_flash() {
 void update_gcode_command(int addr, uint8_t *s) {
   uint8_t command_buf[512];
 
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   // read back the gcode command before erase spi flash
   W25QXX.SPI_FLASH_BufferRead((uint8_t *)&command_buf, GCODE_COMMAND_ADDR, sizeof(command_buf));
   W25QXX.SPI_FLASH_SectorErase(VAR_INF_ADDR);
@@ -265,7 +265,7 @@ void update_gcode_command(int addr, uint8_t *s) {
 }
 
 void get_gcode_command(int addr, uint8_t *d) {
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   W25QXX.SPI_FLASH_BufferRead((uint8_t *)d, addr, 100);
 }
 
@@ -433,7 +433,7 @@ void tft_style_init() {
 #define MAX_TITLE_LEN 28
 
 char public_buf_m[100] = {0};
-char public_buf_l[30];
+char public_buf_l[50];
 
 void titleText_cat(char *str, int strSize, char *addPart) {
   if (str == 0 || addPart == 0) return;
@@ -623,13 +623,17 @@ char *creat_title_text() {
           bmp_public_buf[j] = ascii2dec_test((char*)&public_buf[i]) << 4 | ascii2dec_test((char*)&public_buf[i + 1]);
         if (j >= 400) break;
       }
+
       for (i = 0; i < 400; i += 2) {
         p_index = (uint16_t *)(&bmp_public_buf[i]);
         if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full;
       }
+
       SPI_TFT.tftio.WriteSequence((uint16_t*)bmp_public_buf, 200);
+      // SPI_TFT.tftio.WriteSequenceIT((uint16_t*)bmp_public_buf, 200);
+      
       #if HAS_BAK_VIEW_IN_FLASH
-        W25QXX.init(SPI_QUARTER_SPEED);
+        W25QXX.init(SPI_FULL_SPEED);
         if (row < 20) W25QXX.SPI_FLASH_SectorErase(BAK_VIEW_ADDR_TFT35 + row * 4096);
         W25QXX.SPI_FLASH_BufferWrite(bmp_public_buf, BAK_VIEW_ADDR_TFT35 + row * 400, 400);
       #endif
@@ -674,7 +678,7 @@ char *creat_title_text() {
   void draw_default_preview(int xpos_pixel, int ypos_pixel, uint8_t sel) {
     int index;
     int y_off = 0;
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
     for (index = 0; index < 10; index++) { // 200*200
       #if HAS_BAK_VIEW_IN_FLASH
         if (sel == 1) {
@@ -689,10 +693,10 @@ char *creat_title_text() {
 
       SPI_TFT.setWindow(xpos_pixel, y_off * 20 + ypos_pixel, 200, 20); // 200*200
       SPI_TFT.tftio.WriteSequence((uint16_t*)(bmp_public_buf), DEFAULT_VIEW_MAX_SIZE / 20);
-
+      // SPI_TFT.tftio.WriteSequenceIT((uint16_t*)(bmp_public_buf), DEFAULT_VIEW_MAX_SIZE / 20);
       y_off++;
     }
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
   }
 
   void disp_pre_gcode(int xpos_pixel, int ypos_pixel) {
@@ -729,6 +733,58 @@ void print_time_run() {
   }
 }
 
+// uint16_t print_disp_mode = 0;
+
+typedef enum{
+  MODE_DISP_EXT_TEMP = 0,
+  MODE_DISP_BED_TEMP    = 1,
+  MODE_DISP_FAN_TEMP    = 2,
+  MODE_DISP_PRINT_TEMP  = 3,
+  MODE_DISP_FANZ_ZPOS   = 4,
+}disp_mode_t;
+
+disp_mode_t print_disp_mode = MODE_DISP_EXT_TEMP; // defalut MODE_DISP_EXT_TEMP
+
+
+void print_dis_status() {
+
+  if (temps_update_flag) {
+        temps_update_flag = false;
+        // disp_ext_temp();
+        // disp_bed_temp();
+        // disp_fan_speed();
+        // disp_print_time();
+        // disp_fan_Zpos();
+      switch(print_disp_mode) {
+
+        case MODE_DISP_EXT_TEMP: 
+          disp_ext_temp();
+          print_disp_mode = MODE_DISP_BED_TEMP;
+        break;
+
+        case MODE_DISP_BED_TEMP: 
+          disp_bed_temp();
+          print_disp_mode = MODE_DISP_FAN_TEMP;
+        break;  
+
+        case MODE_DISP_FAN_TEMP: 
+          disp_fan_speed();
+          print_disp_mode = MODE_DISP_PRINT_TEMP;
+        break;  
+
+        case MODE_DISP_PRINT_TEMP:
+          disp_print_time();
+          print_disp_mode = MODE_DISP_FANZ_ZPOS;
+        break;
+
+        case MODE_DISP_FANZ_ZPOS: 
+          disp_fan_Zpos();
+          print_disp_mode = MODE_DISP_EXT_TEMP;
+        break; 
+      }
+  } 
+}
+
 void GUI_RefreshPage() {
   if ((systick_uptime_millis % 1000) == 0) temps_update_flag = true;
   if ((systick_uptime_millis % 3000) == 0) printing_rate_update_flag = true;
@@ -755,17 +811,21 @@ void GUI_RefreshPage() {
       }
       break;
 
-    case PRINT_FILE_UI: break;
+    case PRINT_FILE_UI: 
+    
+    break;
 
     case PRINTING_UI:
-      if (temps_update_flag) {
-        temps_update_flag = false;
-        disp_ext_temp();
-        disp_bed_temp();
-        disp_fan_speed();
-        disp_print_time();
-        disp_fan_Zpos();
-      }
+      // if (temps_update_flag) {
+      //   temps_update_flag = false;
+      //   disp_ext_temp();
+      //   disp_bed_temp();
+      //   disp_fan_speed();
+      //   disp_print_time();
+      //   disp_fan_Zpos();
+      // }
+      print_dis_status();
+
       if (printing_rate_update_flag || marlin_state == MF_SD_COMPLETE) {
         printing_rate_update_flag = false;
         if (!gcode_preview_over) setProBarRate();
@@ -870,6 +930,15 @@ void GUI_RefreshPage() {
         disp_z_offset_value();
       }
       break;
+    
+    #if ANY(BLTOUCH, FIX_MOUNTED_PROBE)
+      case BLTOUCH_UI:
+        if (temps_update_flag) {
+          temps_update_flag = false;
+          disp_bltouch_z_offset_value();
+        }
+        break;
+    #endif
 
     default: break;
   }
@@ -1163,7 +1232,7 @@ lv_obj_t* lv_screen_create(DISP_STATE newScreenType, const char *title) {
   if (titleLabel)
     lv_obj_set_style(titleLabel, &tft_style_label_rel);
 
-  lv_refr_now(lv_refr_get_disp_refreshing());
+  lv_refr_now(lv_refr_get_disp_refreshing());   // 立即刷新屏幕
 
   return scr;
 }
@@ -1315,13 +1384,48 @@ lv_obj_t* lv_screen_menu_item(lv_obj_t *par, const char *text, lv_coord_t x, lv_
   return btn;
 }
 
+lv_obj_t* lv_screen_menu_item_w(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, bool drawArrow) {
+  lv_obj_t *btn = lv_btn_create(par, nullptr);   /*Add a button the current screen*/
+  lv_obj_set_pos(btn, x, y);                         /*Set its position*/
+  lv_obj_set_size(btn, 350, PARA_UI_SIZE_Y);                       /*Set its size*/
+  if (id > -1) lv_obj_set_event_cb_mks(btn, cb, id, "", 0);
+  lv_btn_use_label_style(btn);
+  lv_btn_set_layout(btn, LV_LAYOUT_OFF);
+  lv_obj_t *label = lv_label_create_empty(btn);        /*Add a label to the button*/
+  if (gCfgItems.multiple_language) {
+    lv_label_set_text(label, text);
+    lv_obj_align(label, btn, LV_ALIGN_IN_LEFT_MID, 0, 0);
+  }
+  if (TERN0(HAS_ROTARY_ENCODER, gCfgItems.encoder_enable))
+    lv_group_add_obj(g, btn);
+
+  if (drawArrow) (void)lv_imgbtn_create(par, "F:/bmp_arrow.bin", x + PARA_UI_SIZE_X, y + PARA_UI_ARROW_V, cb, id);
+
+  lv_obj_t *line1 = lv_line_create(par, nullptr);
+  lv_ex_line(line1, line_points[index]);
+
+  return btn;
+}
+
 lv_obj_t* lv_screen_menu_item_1_edit(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, const char *editValue) {
-  lv_obj_t *btn = lv_screen_menu_item(par, text, x, y, cb, -1, index, false);
-  lv_obj_t *btnValue = lv_btn_create(par, PARA_UI_VALUE_POS_X, y + PARA_UI_VALUE_V, PARA_UI_VALUE_BTN_X_SIZE, PARA_UI_VALUE_BTN_Y_SIZE, cb, id);
-  lv_obj_t *labelValue = lv_label_create_empty(btnValue);
+  // lv_obj_t *btn = lv_screen_menu_item(par, text, x, y, cb, -1, index, false);
+  // lv_obj_t *btnValue = lv_btn_create(par, PARA_UI_VALUE_POS_X, y + PARA_UI_VALUE_V, PARA_UI_VALUE_BTN_X_SIZE, PARA_UI_VALUE_BTN_Y_SIZE, cb, id);
+  // lv_obj_t *labelValue = lv_label_create_empty(btnValue);
+  // lv_label_set_text(labelValue, editValue);
+  // lv_obj_align(labelValue, btnValue, LV_ALIGN_CENTER, 0, 0);
+
+  lv_label_create(par, x + PARA_UI_ITEM_TEXT_H, y + PARA_UI_ITEM_TEXT_V, text);
+
+  lv_obj_t* btnValue = lv_btn_create(par, PARA_UI_VALUE_POS_X, y + PARA_UI_VALUE_V, PARA_UI_VALUE_BTN_X_SIZE, PARA_UI_VALUE_BTN_Y_SIZE, cb, id);
+  lv_obj_t* labelValue = lv_label_create_empty(btnValue);
   lv_label_set_text(labelValue, editValue);
   lv_obj_align(labelValue, btnValue, LV_ALIGN_CENTER, 0, 0);
-  return btn;
+  if (TERN0(HAS_ROTARY_ENCODER, gCfgItems.encoder_enable)) lv_group_add_obj(g, btnValue);
+
+  lv_obj_t *line1 = lv_line_create(par, nullptr);
+  lv_ex_line(line1, line_points[index]);
+
+  return btnValue;
 }
 
 lv_obj_t* lv_screen_menu_item_2_edit(lv_obj_t *par, const char *text, lv_coord_t x, lv_coord_t y, lv_event_cb_t cb, const int id, const int index, const char *editValue, const int idEdit2, const char *editValue2) {
@@ -1382,11 +1486,15 @@ void print_time_count() {
     if (print_time.start == 1) print_time.seconds++;
 }
 
+// #define USE_DMA_FSMC_TC_INT
 void LV_TASK_HANDLER() {
 
-  GUI_RefreshPage();
-
-  lv_task_handler();
+  // #ifdef USE_DMA_FSMC_TC_INT
+  #if EITHER(USE_DMA_FSMC_TC_INT, USE_SPI_DMA_TC)
+    if(!get_lcd_dma_lock()) lv_task_handler();
+  #else
+    lv_task_handler();
+  #endif
 
   #if BOTH(MKS_TEST, SDSUPPORT)
     if (mks_test_flag == 0x1E) mks_hardware_test();
@@ -1395,6 +1503,8 @@ void LV_TASK_HANDLER() {
   TERN_(HAS_GCODE_PREVIEW, disp_pre_gcode(2, 36));
 
   TERN_(MKS_WIFI_MODULE, get_wifi_commands());
+
+  GUI_RefreshPage();
 
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_update_encoder();

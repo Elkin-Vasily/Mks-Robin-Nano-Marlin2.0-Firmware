@@ -23,7 +23,7 @@
 #pragma once
 
 //
-// MKS Robin Nano V3, MKS Eagle pinmap
+// MKS Robin Nano V3, MKS Eagle, MKS NANO6 pinmap, 
 //
 
 // #define MKS_TEST
@@ -60,8 +60,14 @@
 #define X_DIAG_PIN                          PA15
 #define Y_DIAG_PIN                          PD2
 #define Z_DIAG_PIN                          PC8
-#define E0_DIAG_PIN                         PC4
+
+#ifndef E0_DIAG_PIN
+  #define E0_DIAG_PIN                         PC4
+#endif
+
+#ifndef E1_DIAG_PIN
 #define E1_DIAG_PIN                         PE7
+#endif
 
 #define X_STOP_PIN                    X_DIAG_PIN
 #define Y_STOP_PIN                    Y_DIAG_PIN
@@ -71,11 +77,15 @@
 //
 // Steppers
 //
+#ifndef X_ENABLE_PIN
 #define X_ENABLE_PIN                        PE4
+#endif
 #define X_STEP_PIN                          PE3
 #define X_DIR_PIN                           PE2
 
-#define Y_ENABLE_PIN                        PE1
+#ifndef Y_ENABLE_PIN
+  #define Y_ENABLE_PIN                        PE1
+#endif
 #define Y_STEP_PIN                          PE0
 #define Y_DIR_PIN                           PB9
 
@@ -299,6 +309,7 @@
   #define TOUCH_MOSI_PIN             EXP2_05_PIN  // SPI1_MOSI
 
   #define LCD_READ_ID                       0xD3
+  
   #define LCD_USE_DMA_SPI
 
   #define TFT_BUFFER_SIZE                  14400
@@ -318,6 +329,8 @@
   #ifndef TOUCH_ORIENTATION
     #define TOUCH_ORIENTATION    TOUCH_LANDSCAPE
   #endif
+
+  // #define USE_SPI_DMA_TC
 
 #elif HAS_WIRED_LCD
 

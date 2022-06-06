@@ -215,7 +215,10 @@ static const char assets[][LONG_FILENAME_LENGTH] = {
   "bmp_custom4.bin",
   "bmp_custom5.bin",
   "bmp_custom6.bin",
-  "bmp_custom7.bin"
+  "bmp_custom7.bin",
+
+  // bltouch settings screen
+  "bmp_init_state.bin",
 };
 
 #if HAS_SPI_FLASH_FONT
@@ -237,7 +240,7 @@ uint32_t lv_get_pic_addr(uint8_t *Pname) {
     SERIAL_ECHOLNPGM("Getting picture SPI Flash Address: ", (const char*)Pname);
   #endif
 
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
 
   W25QXX.SPI_FLASH_BufferRead(&Pic_cnt, PIC_COUNTER_ADDR, 1);
   if (Pic_cnt == 0xFF) Pic_cnt = 0;
@@ -264,7 +267,7 @@ const char *bakPath = "_assets";
 
 void spiFlashErase_PIC() {
   volatile uint32_t pic_sectorcnt = 0;
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   // erase 0x001000 -64K
   for (pic_sectorcnt = 0; pic_sectorcnt < (64 - 4) / 4; pic_sectorcnt++) {
     watchdog_refresh();
@@ -280,7 +283,7 @@ void spiFlashErase_PIC() {
 #if HAS_SPI_FLASH_FONT
   void spiFlashErase_FONT() {
     volatile uint32_t Font_sectorcnt = 0;
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
     for (Font_sectorcnt = 0; Font_sectorcnt < 32 - 1; Font_sectorcnt++) {
       watchdog_refresh();
       W25QXX.SPI_FLASH_BlockErase(FONTINFOADDR + Font_sectorcnt * 64 * 1024);
@@ -417,7 +420,7 @@ uint32_t Pic_Info_Write(uint8_t *P_name, uint32_t P_size) {
     watchdog_refresh();
     disp_assets_update_progress(fn);
 
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
 
     uint16_t pbr;
     uint32_t pfileSize;
@@ -504,6 +507,7 @@ uint32_t Pic_Info_Write(uint8_t *P_name, uint32_t P_size) {
       disp_assets_update_progress("Reading files...");
       dir_t d;
       while (dir.readDir(&d, card.longFilename) > 0) {
+        
         // If we don't get a long name, but gets a short one, try it
         if (card.longFilename[0] == 0 && d.name[0] != 0)
           dosName2LongName((const char*)d.name, card.longFilename);
@@ -582,21 +586,21 @@ void lv_pic_test(uint8_t *P_Rbuff, uint32_t addr, uint32_t size) {
     SPIFlash.readData(P_Rbuff, size);
     currentFlashPage++;
   #else
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
     W25QXX.SPI_FLASH_BufferRead((uint8_t *)P_Rbuff, addr, size);
   #endif
 }
 
 #if HAS_SPI_FLASH_FONT
   void get_spi_flash_data(const char *rec_buf, int addr, int size) {
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
     W25QXX.SPI_FLASH_BufferRead((uint8_t *)rec_buf, UNIGBK_FLASH_ADDR + addr, size);
   }
 #endif
 
 uint32_t logo_addroffset = 0;
 void Pic_Logo_Read(uint8_t *LogoName, uint8_t *Logo_Rbuff, uint32_t LogoReadsize) {
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   W25QXX.SPI_FLASH_BufferRead(Logo_Rbuff, PIC_LOGO_ADDR + logo_addroffset, LogoReadsize);
   logo_addroffset += LogoReadsize;
   if (logo_addroffset >= LOGO_MAX_SIZE_TFT35)
@@ -605,7 +609,7 @@ void Pic_Logo_Read(uint8_t *LogoName, uint8_t *Logo_Rbuff, uint32_t LogoReadsize
 
 uint32_t default_view_addroffset = 0;
 void default_view_Read(uint8_t *default_view_Rbuff, uint32_t default_view_Readsize) {
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
   W25QXX.SPI_FLASH_BufferRead(default_view_Rbuff, DEFAULT_VIEW_ADDR_TFT35 + default_view_addroffset, default_view_Readsize);
   default_view_addroffset += default_view_Readsize;
   if (default_view_addroffset >= DEFAULT_VIEW_MAX_SIZE)
@@ -615,7 +619,7 @@ void default_view_Read(uint8_t *default_view_Rbuff, uint32_t default_view_Readsi
 #if HAS_BAK_VIEW_IN_FLASH
   uint32_t flash_view_addroffset = 0;
   void flash_view_Read(uint8_t *flash_view_Rbuff, uint32_t flash_view_Readsize) {
-    W25QXX.init(SPI_QUARTER_SPEED);
+    W25QXX.init(SPI_FULL_SPEED);
     W25QXX.SPI_FLASH_BufferRead(flash_view_Rbuff, BAK_VIEW_ADDR_TFT35 + flash_view_addroffset, flash_view_Readsize);
     flash_view_addroffset += flash_view_Readsize;
     if (flash_view_addroffset >= FLASH_VIEW_MAX_SIZE)

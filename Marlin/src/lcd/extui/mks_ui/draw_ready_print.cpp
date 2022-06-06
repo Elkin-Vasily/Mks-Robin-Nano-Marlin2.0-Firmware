@@ -43,9 +43,9 @@
 #include "mks_hardware.h"
 #include <stdio.h>
 
-#define ICON_POS_Y          260
-#define TARGET_LABEL_MOD_Y -36
-#define LABEL_MOD_Y         30
+#define ICON_POS_Y            260
+#define TARGET_LABEL_MOD_Y    -36
+#define LABEL_MOD_Y           30
 
 extern lv_group_t*  g;
 #ifndef USE_NEW_LVGL_CONF
@@ -89,6 +89,7 @@ void disp_Limit_ok() {
   lv_obj_set_style(limit_info, &limit_style);
   lv_label_set_text(limit_info, "Limit:ok");
 }
+
 void disp_Limit_error() {
   limit_style.text.color.full = 0xF800;
   lv_obj_set_style(limit_info, &limit_style);
@@ -134,6 +135,7 @@ void set_main_screen(void) {
 }
 
 void lv_draw_ready_print() {
+  
   char buf[30] = {0};
   lv_obj_t *buttonTool;
 
@@ -157,6 +159,7 @@ void lv_draw_ready_print() {
     lv_obj_set_pos(buttonTool, 360, 180);
 
     lv_obj_t *label_tool = lv_label_create_empty(buttonTool);
+    
     if (gCfgItems.multiple_language) {
       lv_label_set_text(label_tool, main_menu.tool);
       lv_obj_align(label_tool, buttonTool, LV_ALIGN_IN_BOTTOM_MID, 0, BUTTON_TEXT_Y_OFFSET);
