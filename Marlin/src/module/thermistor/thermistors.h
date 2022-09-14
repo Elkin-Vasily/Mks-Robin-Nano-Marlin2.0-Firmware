@@ -180,6 +180,9 @@ typedef struct { int16_t value; celsius_t celsius; } temp_entry_t;
 #if ANY_THERMISTOR_IS(147) // Pt100 with 4k7 pullup
   #include "thermistor_147.h"
 #endif
+#if ANY_THERMISTOR_IS(200) // Unknown thermistor on a E3D v6 hotend
+  #include "thermistor_200.h"
+#endif
 #if ANY_THERMISTOR_IS(201) // Pt100 with LMV324 Overlord
   #include "thermistor_201.h"
 #endif
